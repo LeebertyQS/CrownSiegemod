@@ -8,3 +8,11 @@ runtime=mono
 verified=2026-11-07
 notes=Steam 正式版，发售日 2026-09-18。内容打包于 StreamingAssets/ContentArchives（UnityFS），
 notes=实体场景在 StreamingAssets/EntityScenes（DOTSBIN），Addressables 2.11.2。
+
+# 本机已安装的 Unity 编辑器（2026-11-07 核实）
+editor-installed=6000.6.8f1
+editor-path=C:\Program Files\Unity\Hub\Editor\6000.6.8f1\Editor\Unity.exe
+editor-product=Unity 6.6 / x86_64
+# 注意：编辑器补丁版本比游戏高一位（8f1 vs 7f1）。同 minor(6000.6) 理论上序列化格式兼容，
+# 但未经实测。烘 bundle 前必须跑「空 bundle 回填」验证，或改装 6000.6.7f1 精确版。
+editor-note=VERSION MISMATCH, unverified

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>决策记录（ADR）</title>
+<style>
+:root{
+  --ink:#1a1a1a; --muted:#5c6370; --line:#e3e6ea; --bg:#ffffff;
+  --accent:#1f6feb; --code-bg:#f6f8fa; --warn-bg:#fff8e6; --warn-line:#e0a800;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:#f7f8fa; color:var(--ink);
+  font:16px/1.75 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:880px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);}
+h1{font-size:30px; line-height:1.35; margin:0 0 8px; letter-spacing:-.4px;}
+h2{font-size:21px; margin:44px 0 14px; padding-top:18px; border-top:1px solid var(--line);}
+h3{font-size:17px; margin:28px 0 10px;}
+p{margin:12px 0;}
+a{color:var(--accent); text-decoration:none;}
+a:hover{text-decoration:underline;}
+hr{border:0; border-top:1px solid var(--line); margin:36px 0;}
+code{background:var(--code-bg); padding:2px 5px; border-radius:4px;
+  font:13.5px/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;}
+pre{background:var(--code-bg); padding:14px 16px; border-radius:8px; overflow-x:auto;
+  border:1px solid var(--line);}
+pre code{background:none; padding:0; font-size:13px;}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14.5px;}
+th,td{border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f2f4f7; font-weight:600; white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfc;}
+blockquote{margin:16px 0; padding:12px 16px; background:var(--warn-bg);
+  border-left:3px solid var(--warn-line); color:#4a3c00; border-radius:0 6px 6px 0;}
+blockquote p{margin:4px 0;}
+ul,ol{padding-left:24px; margin:12px 0;}
+li{margin:5px 0;}
+li input[type=checkbox]{margin-right:6px; transform:translateY(1px);}
+.toc{background:#f7f8fa; border:1px solid var(--line); border-radius:8px;
+  padding:14px 20px; margin:24px 0 8px; font-size:14.5px;}
+.toc b{display:block; font-size:13px; letter-spacing:.06em; color:var(--muted);
+  text-transform:uppercase; margin-bottom:8px;}
+.toc a{display:block; padding:2px 0; color:#333;}
+.meta{color:var(--muted); font-size:13.5px; margin-bottom:26px;}
+@media print{
+  body{background:#fff;} .page{box-shadow:none; padding:0; max-width:none;}
+  h2{page-break-after:avoid;} pre,table,blockquote{page-break-inside:avoid;}
+}
+@media (max-width:720px){
+  .page{padding:28px 20px 64px;} h1{font-size:24px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>决策记录（ADR）</h1>
+<div class="meta">Crown Siege Mod · 内部文档 · 有疑问直接找 Lee</div>
+<nav class="toc"><b>目录</b><a href="#d-001">D-001 项目定位：机制为主，内容暂缓</a>
+<a href="#d-002">D-002 锁定游戏版本</a>
+<a href="#d-003-bepinex-6-beunity-mono">D-003 加载器：BepInEx 6 BE（Unity Mono）</a>
+<a href="#d-004-git">D-004 版本控制：Git，云盘只做分发</a>
+<a href="#d-005-localprops">D-005 路径抽象：本地 local.props + 自动探测</a>
+<a href="#d-006">D-006 代码组织：单程序集 + 目录边界</a>
+<a href="#d-007">D-007 联机：只定接口，不实现</a>
+<a href="#d-008-godot">D-008 引擎：团结引擎与 Godot 均不进入运行时</a>
+<a href="#d-009">D-009 分发边界</a>
+<a href="#d-010">D-010 成功标准：作品集为主，分发为副</a>
+<a href="#d-011">D-011 仓库位置</a>
+<a href="#d-012">D-012 待决事项</a>
+<a href="#d-013-git">D-013 本地 Git 仓库已初始化</a>
+<a href="#d-014-unity">D-014 Unity 编辑器版本与游戏不一致</a></nav>
+<p>格式：编号 / 决策 / 理由 / 状态。<strong>变更不删旧条目，追加一条新的并标「取代 D-xxx」。</strong></p>
+<hr />
+<h2 id="d-001">D-001 项目定位：机制为主，内容暂缓</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>初期目标为「加机制 + 加内容」。经核查，加内容需要 Unity 6000.6.7f1 编辑器 + 版本匹配的 Entities/Addressables + 自建工程 + 重建 catalog，当前一条都不具备。</p>
+<p><strong>结论</strong>：先做机制。内容在拿到编辑器并跑通空 bundle 回填实验后再解冻。</p>
+<hr />
+<h2 id="d-002">D-002 锁定游戏版本</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p><code>build-guid = d07d7b203ec34f6b9a35c7796923a472</code>，Unity <code>6000.6.7f1</code>。</p>
+<p>启动时由 <code>VersionGuard</code> 校验，不匹配默认拒绝加载。理由：补丁打在变了的程序集上会静默失效，比崩溃更难查。</p>
+<blockquote>
+<p>曾经考虑过「游戏不会更新所以不用管版本」。<strong>该假设已被证伪</strong>——开发者公开发布过后续内容计划（新环境、新 boss、更多单位），且游戏上市仅 7 周，正处于最可能更新的窗口。</p>
+</blockquote>
+<hr />
+<h2 id="d-003-bepinex-6-beunity-mono">D-003 加载器：BepInEx 6 BE（Unity Mono）</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>游戏是 <strong>Mono 后端</strong>（<code>Managed/</code> 存在 214 个 dll），BepInEx + Harmony 可行。选 6.x 而非 5.x：5.x 的 Unity 6 支持没有明确保证。</p>
+<p><strong>未验证</strong>：<code>BepInEx 6.0.0-be.755</code> 能否在 <code>6000.6.7f1</code> 上注入。这就是 P0 探针存在的意义。</p>
+<hr />
+<h2 id="d-004-git">D-004 版本控制：Git，云盘只做分发</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>最初方案是「WorkBuddy 项目盘共享」。否决理由：</p>
+<ul>
+<li>无分支、无 diff、无原子提交、无回滚</li>
+<li>二进制文件（bundle / psd / entities）冲突时静默覆盖，事后无法定位</li>
+<li>项目盘的每次写入都需要人工确认，与高频迭代冲突</li>
+</ul>
+<p><strong>结论</strong>：Git（LFS）为唯一真相，项目盘只放文档与发布产物。</p>
+<hr />
+<h2 id="d-005-localprops">D-005 路径抽象：本地 <code>local.props</code> + 自动探测</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>仓库内不含任何绝对路径，也不含游戏 dll。每台机器跑 <code>tools/detect-game.ps1</code> 生成本地 <code>local.props</code>（已 gitignore），MSBuild 从这里取 <code>CrownSiegeHome</code>。</p>
+<p>同时满足三个人口：一人一路径、路径不入库、游戏资产不随仓库流传。</p>
+<hr />
+<h2 id="d-006">D-006 代码组织：单程序集 + 目录边界</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>否决「一模块一 csproj」：游戏无任何前例可循，BepInEx 6 的跨程序集解析行为未验证，多 DLL 会引入"什么都不发生"型故障。</p>
+<p>用目录 + 配置开关 + 注册表 try/catch 达到同样的隔离效果，风险为零。</p>
+<hr />
+<h2 id="d-007">D-007 联机：只定接口，不实现</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>阻塞在三个未解问题：ECS 状态如何快照、权威模型选哪种、同步粒度。</p>
+<p><strong>禁止</strong>：写假联机（本地双窗口伪装、假延迟）来"先看看效果"。它会让所有人误判进度。</p>
+<hr />
+<h2 id="d-008-godot">D-008 引擎：团结引擎与 Godot 均不进入运行时</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<ul>
+<li><strong>团结引擎</strong>：官方口径以 Unity 2022 LTS 为研发基础、独立分支。产出的资源版本号对不上 <code>6000.6.7f1</code>。</li>
+<li><strong>Godot</strong>：不同引擎，产不出 UnityFS bundle，也注入不了 Mono 程序集。</li>
+</ul>
+<p><strong>允许的用法</strong>：Godot/Python/Electron 做外围工具（配置编辑、数据校验、打包 GUI）；不碰游戏运行时。</p>
+<hr />
+<h2 id="d-009">D-009 分发边界</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>只分发我们自己写的代码与原创资源。<strong>不打包游戏原始资产</strong>（从 <code>ContentArchives</code> 或 <code>EntityScenes</code> 里取出的任何美术/音频/数据）。</p>
+<p>原因：既侵权，也会让仓库永久无法公开。</p>
+<hr />
+<h2 id="d-010">D-010 成功标准：作品集为主，分发为副</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>SteamDB（2026-11-07）：全史峰值 1,270（发售次日），当前在线 <strong>31</strong>，434 条评价。</p>
+<p>日活两位数的盘子撑不起"社区分发"作为主目标。主目标定为<strong>作品集</strong>（展示"能拆开并安全改一个 DOTS 商业项目"），分发做副产品，找 3–5 个种子用户验证。</p>
+<hr />
+<h2 id="d-011">D-011 仓库位置</h2>
+<p><strong>状态</strong>：已定 · 2026-11-07</p>
+<p>本地 <code>D:\GameStudio\06_CsMod</code>，对应工作室编号目录。远程仓库待定（建议 Private）。</p>
+<hr />
+<h2 id="d-012">D-012 待决事项</h2>
+<p><strong>状态</strong>：未决</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>待决</th>
+<th>卡住了什么</th>
+<th>谁定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>第一个机制的具体形态</td>
+<td>手工操控 / 联机之外还有没有别的</td>
+<td>Lee</td>
+</tr>
+<tr>
+<td>2</td>
+<td>是否安装 Unity 6000.6.7f1</td>
+<td>「加内容」整条线</td>
+<td>Lee</td>
+</tr>
+<tr>
+<td>3</td>
+<td>联机同步方案（权威模型）</td>
+<td>联机能否成立</td>
+<td>Lee + 协作者</td>
+</tr>
+<tr>
+<td>4</td>
+<td>远程仓库地址与可见性</td>
+<td>协作启动</td>
+<td>Lee</td>
+</tr>
+<tr>
+<td>5</td>
+<td>美术产能与交付格式</td>
+<td>「加内容」的资源侧</td>
+<td>美术组</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="d-013-git">D-013 本地 Git 仓库已初始化</h2>
+<p><strong>状态</strong>：已完成 · 2026-11-07</p>
+<p><code>D:\GameStudio\06_CsMod</code> 已 <code>git init -b main</code>、配置 <code>git lfs install --local</code>、提交首个 commit <code>ae2b1ba</code>。提交身份 <code>LeebertyQS &lt;cterol@163.com&gt;</code>。</p>
+<p>首个提交 34 个文件，<strong>未纳入</strong>：<code>local.props</code>、<code>src/bin</code>、<code>src/obj</code>、任何游戏 dll 或原始资源（已逐项核对 <code>git status</code>）。</p>
+<p><strong>远程仓库仍未建</strong>——需要好友的 GitHub 用户名 + 仓库名。已核实的权限边界写入 <code>GIT-WORKFLOW.md</code> 第 7 节：Free 私有仓无限协作者、协作者只能给 Write、无按目录授权、<strong>无强制分支保护</strong>（要 Pro $4/月）。</p>
+<hr />
+<h2 id="d-014-unity">D-014 Unity 编辑器版本与游戏不一致</h2>
+<p><strong>状态</strong>：已核实，待处理 · 2026-11-07</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>游戏本体</td>
+<td><code>6000.6.7f1</code></td>
+</tr>
+<tr>
+<td>本机已装编辑器</td>
+<td><strong><code>6000.6.8f1</code></strong>（Unity 6.6 / x86_64）</td>
+</tr>
+</tbody>
+</table>
+<p>路径 <code>C:\Program Files\Unity\Hub\Editor\6000.6.8f1\Editor\Unity.exe</code>，Hub 元数据已确认安装完整。</p>
+<p><strong>影响</strong>：同 minor(6000.6) 的补丁版本理论上 AssetBundle 序列化格式兼容，但<strong>未经实测</strong>。更要紧的是 <code>Entities</code> / <code>Burst</code> / <code>Addressables 2.11.2</code> 包版本必须精确对齐，否则烘出的 <code>.entities</code> 子场景结构对不上。</p>
+<p><strong>待办</strong>：烘 bundle 前先跑「造一个空 bundle 塞回游戏，看能否被加载」的最小实验；不通过就改装 <code>6000.6.7f1</code> 精确版。在此之前，「加内容」仍视为阻塞。</p>
+</div>
+</body>
+</html>
