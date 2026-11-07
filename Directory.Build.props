@@ -1,0 +1,24 @@
+<Project>
+
+  <!-- 每台机器自己的游戏路径。local.props 由 tools/detect-game.ps1 生成，已被 .gitignore 排除 -->
+  <Import Project="$(MSBuildThisFileDirectory)local.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)local.props')" />
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <CrownSiegeDataDir>$(CrownSiegeHome)\CrownSiege_Data</CrownSiegeDataDir>
+    <CrownSiegeManagedDir>$(CrownSiegeDataDir)\Managed</CrownSiegeManagedDir>
+    <BepInExPluginsDir>$(CrownSiegeHome)\BepInEx\plugins</BepInExPluginsDir>
+    <GameBuildGuidExpected>d07d7b203ec34f6b9a35c7796923a472</GameBuildGuidExpected>
+  </PropertyGroup>
+
+  <!-- 路径没配好就在编译前停下，不要让人对着 200 行红色报错猜 -->
+  <Target Name="CheckGamePath" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(CrownSiegeHome)'==''"
+           Text="未配置游戏路径。先运行：powershell -ExecutionPolicy Bypass -File tools\detect-game.ps1" />
+    <Error Condition="!Exists('$(CrownSiegeManagedDir)\Assembly-CSharp.dll')"
+           Text="在 $(CrownSiegeManagedDir) 下找不到 Assembly-CSharp.dll。路径错了，或游戏没装全。重跑 tools\detect-game.ps1 -GameHome &quot;你的路径&quot;" />
+  </Target>
+
+</Project>

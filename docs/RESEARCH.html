@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>逆向研究记录（Crown Siege）</title>
+<style>
+:root{
+  --ink:#1a1a1a; --muted:#5c6370; --line:#e3e6ea; --bg:#ffffff;
+  --accent:#1f6feb; --code-bg:#f6f8fa; --warn-bg:#fff8e6; --warn-line:#e0a800;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:#f7f8fa; color:var(--ink);
+  font:16px/1.75 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:880px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);}
+h1{font-size:30px; line-height:1.35; margin:0 0 8px; letter-spacing:-.4px;}
+h2{font-size:21px; margin:44px 0 14px; padding-top:18px; border-top:1px solid var(--line);}
+h3{font-size:17px; margin:28px 0 10px;}
+p{margin:12px 0;}
+a{color:var(--accent); text-decoration:none;}
+a:hover{text-decoration:underline;}
+hr{border:0; border-top:1px solid var(--line); margin:36px 0;}
+code{background:var(--code-bg); padding:2px 5px; border-radius:4px;
+  font:13.5px/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;}
+pre{background:var(--code-bg); padding:14px 16px; border-radius:8px; overflow-x:auto;
+  border:1px solid var(--line);}
+pre code{background:none; padding:0; font-size:13px;}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14.5px;}
+th,td{border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f2f4f7; font-weight:600; white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfc;}
+blockquote{margin:16px 0; padding:12px 16px; background:var(--warn-bg);
+  border-left:3px solid var(--warn-line); color:#4a3c00; border-radius:0 6px 6px 0;}
+blockquote p{margin:4px 0;}
+ul,ol{padding-left:24px; margin:12px 0;}
+li{margin:5px 0;}
+li input[type=checkbox]{margin-right:6px; transform:translateY(1px);}
+.toc{background:#f7f8fa; border:1px solid var(--line); border-radius:8px;
+  padding:14px 20px; margin:24px 0 8px; font-size:14.5px;}
+.toc b{display:block; font-size:13px; letter-spacing:.06em; color:var(--muted);
+  text-transform:uppercase; margin-bottom:8px;}
+.toc a{display:block; padding:2px 0; color:#333;}
+.meta{color:var(--muted); font-size:13.5px; margin-bottom:26px;}
+@media print{
+  body{background:#fff;} .page{box-shadow:none; padding:0; max-width:none;}
+  h2{page-break-after:avoid;} pre,table,blockquote{page-break-inside:avoid;}
+}
+@media (max-width:720px){
+  .page{padding:28px 20px 64px;} h1{font-size:24px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>逆向研究记录（Crown Siege）</h1>
+<div class="meta">Crown Siege Mod · 内部文档 · 有疑问直接找 Lee</div>
+<nav class="toc"><b>目录</b><a href="#1">1. 构建指纹 [已核实]</a>
+<a href="#2">2. 内容与资源的存放形式</a>
+<a href="#3-ecs">3. ECS / 脚本架构</a>
+<a href="#4-mod">4. 加载与 mod 支持现状</a>
+<a href="#5-steamdb2026-11-07">5. 外部事实（SteamDB，2026-11-07）</a>
+<a href="#6">6. 待验证清单</a>
+<a href="#7">7. 工具链记录</a></nav>
+<blockquote>
+<p>规则：<strong>只记结论和依据，不贴反编译源码。</strong> 需要复现时写清「用什么工具、点开哪个 dll、找哪个类」。
+每条结论后面标了 [已核实] / [推断] / [待验证]。推断当事实用，是本项目最常见的死法。</p>
+</blockquote>
+<p>采集环境：2026-11-07，Steam 正式版，安装路径 <code>D:\SteamLibrary\steamapps\common\Crown Siege</code>。</p>
+<hr />
+<h2 id="1">1. 构建指纹 [已核实]</h2>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>厂商 / 产品</td>
+<td>JOrbitsGames / CrownSiege</td>
+<td><code>CrownSiege_Data/app.info</code></td>
+</tr>
+<tr>
+<td>引擎</td>
+<td>Unity <strong>6000.6.7f1</strong></td>
+<td><code>ContentArchives/*.archive</code> 的 UnityFS 头</td>
+</tr>
+<tr>
+<td>脚本后端</td>
+<td><strong>Mono</strong>（非 IL2CPP）</td>
+<td>存在 <code>CrownSiege_Data/Managed/Assembly-CSharp.dll</code> + <code>MonoBleedingEdge/</code></td>
+</tr>
+<tr>
+<td>build-guid</td>
+<td><code>d07d7b203ec34f6b9a35c7796923a472</code></td>
+<td><code>CrownSiege_Data/boot.config</code></td>
+</tr>
+<tr>
+<td>托管程序集数</td>
+<td>214 个 dll</td>
+<td><code>ls Managed/*.dll</code></td>
+</tr>
+<tr>
+<td><code>Assembly-CSharp.dll</code></td>
+<td>1,140,224 字节</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>Addressables</td>
+<td>2.11.2</td>
+<td><code>StreamingAssets/aa/settings.json</code></td>
+</tr>
+<tr>
+<td>本地化</td>
+<td>9 语言（en/fr/de/pt-br/ru/zh-Hans/es-419/ja/ko）</td>
+<td><code>StreamingAssets/aa/StandaloneWindows64/localization-*</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2">2. 内容与资源的存放形式</h2>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>实体</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>StreamingAssets/ContentArchives/*.archive</code></td>
+<td><code>UnityFS</code> 头（<code>xxd</code> 可见 <code>UnityFS....5.x.6000.6.7f1</code>）</td>
+<td><strong>就是改了扩展名的 AssetBundle</strong></td>
+</tr>
+<tr>
+<td><code>StreamingAssets/ContentArchives/archive_dependencies.txt</code></td>
+<td>文本</td>
+<td>归档 → 对象（<code>b7aef056...:0</code>）的映射</td>
+</tr>
+<tr>
+<td><code>StreamingAssets/EntityScenes/*.entities</code></td>
+<td><code>DOTSBIN!</code> 头</td>
+<td><strong>DOTS 二进制子场景</strong>，非文本、非 YAML</td>
+</tr>
+<tr>
+<td><code>StreamingAssets/aa/**</code></td>
+<td>Addressables bundles</td>
+<td>本地化表、monoscripts 等</td>
+</tr>
+</tbody>
+</table>
+<p><strong>结论</strong>：内容层不是松散文件，"加内容"必须走「重烘 ECS 子场景 + 重打 bundle + 重建 catalog」，需要匹配版本的 Unity 编辑器（见第 6 节）。</p>
+<hr />
+<h2 id="3-ecs">3. ECS / 脚本架构</h2>
+<p><code>Assembly-CSharp.dll</code> 元数据字符串堆中出现（出现 ≠ 大量使用，字符串堆会去重）：</p>
+<ul>
+<li><code>SystemBase</code> 存在、<code>ISystem</code> <strong>不存在</strong> → 系统继承自 <strong>SystemBase（托管类）</strong>，<code>OnUpdate</code> 是托管方法。<strong>[已核实]</strong></li>
+<li><code>BurstCompile</code>、<code>IJobEntity</code>、<code>IJobChunk</code> 均存在 → 计算被下沉到 Job 里。 <strong>[已核实]</strong></li>
+<li>原生库 <code>Plugins/x86_64/lib_burst_generated.dll</code> = 4,771,840 字节 → <strong>Burst 使用量很大</strong>。 <strong>[已核实]</strong></li>
+</ul>
+<p>已识别到的系统类名：</p>
+<pre><code>ApplyDamageSystem            ApplyPositionExplosionSystem
+ProjectileSystem             SpawnProjectileSystem
+ProjectileVisibilitySystem   ProjectileChildRenderersVisibilitySystem
+SpawnImpactParticleSystem    PlayerSaveSystem
+</code></pre>
+<p>已识别到的 Job 结构体：</p>
+<pre><code>CollectDamageRequestsJob      CollectGameObjectDamageJob
+CollectPendingDamageJob       CollectVisibilityRequestsJob
+CollectVisibilityRequestsChunkJob
+ProjectileMovementJob         UnitMovementIntegrationJob
+SharedGroundSeparationJob     GroundContactJob
+</code></pre>
+<h3 id="_1">这意味着什么（关键）</h3>
+<table>
+<thead>
+<tr>
+<th>想改的东西</th>
+<th>可行性</th>
+<th>手段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>系统调度顺序、是否执行、传入参数</td>
+<td>✅ 可行</td>
+<td>Harmony patch <code>SystemBase.OnUpdate</code></td>
+</tr>
+<tr>
+<td><strong>Job 内部的伤害/弹道算式</strong></td>
+<td>❌ 不可行</td>
+<td>Burst 编译为原生代码，Harmony 打不进去</td>
+</tr>
+<tr>
+<td>数据资产（ScriptableObject / 配置）</td>
+<td>⚠️ 待验证</td>
+<td>需先证明能读能写 bundle</td>
+</tr>
+<tr>
+<td>新增单位/关卡（ECS 子场景）</td>
+<td>⚠️ 成本极高</td>
+<td>需重建 Unity 工程 + 同版本 Entities</td>
+</tr>
+</tbody>
+</table>
+<p><strong>所以「加机制」的边界是</strong>：改规则流向可以，改算式不行。想让伤害公式变成别的样子，只能绕过 Job 在托管层重算，性能代价要单独评估。</p>
+<hr />
+<h2 id="4-mod">4. 加载与 mod 支持现状</h2>
+<ul>
+<li>无 <code>mods/</code> 目录，无 Workshop 集成，<code>Plugins/</code> 只有 <code>Steamworks.NET</code> 与 <code>steam_api64.dll</code>。 <strong>[已核实]</strong></li>
+<li>无 BepInEx / Harmony 痕迹 → 我们是第一个往这个游戏里注入的人，没有前人踩过的坑可以抄。 <strong>[已核实]</strong></li>
+<li><code>Plugins/x86_64/libonigwrap.dll</code> 存在（Oniguruma 正则库），可能用于文本/配置解析，值得后续跟。 <strong>[推断]</strong></li>
+</ul>
+<hr />
+<h2 id="5-steamdb2026-11-07">5. 外部事实（SteamDB，2026-11-07）</h2>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>发售日</td>
+<td>2026-09-18</td>
+</tr>
+<tr>
+<td>全史峰值同时在线</td>
+<td>1,270（2026-09-19）</td>
+</tr>
+<tr>
+<td>当前同时在线</td>
+<td>31</td>
+</tr>
+<tr>
+<td>24h 峰值</td>
+<td>36</td>
+</tr>
+<tr>
+<td>评价</td>
+<td>434 条，80.4% 好评</td>
+</tr>
+</tbody>
+</table>
+<p><strong>推论</strong>：日活两位数。任何「社区分发」的预期都要按这个基数算，不能按愿望算。</p>
+<p>开发者公开表态（itch devlog 原文）：<em>"We have so many plans for the full release, including new environments, more boss battles and loads of units and enemies."</em> → <strong>游戏会持续更新，不要假设版本冻结。</strong></p>
+<hr />
+<h2 id="6">6. 待验证清单</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>假设</th>
+<th>验证方法</th>
+<th>致命度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>BepInEx 6 BE (Mono) 能在 Unity 6000.6 上注入</td>
+<td>P0 探针</td>
+<td>致命</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Harmony 能 patch 到 SystemBase.OnUpdate</td>
+<td>P2 探针</td>
+<td>致命</td>
+</tr>
+<tr>
+<td>3</td>
+<td>系统能读到并修改 ScriptableObject / 配置数据</td>
+<td>P1 探针</td>
+<td>高</td>
+</tr>
+<tr>
+<td>4</td>
+<td>用 Unity 6000.6.7f1 能重烘 bundle 且被游戏接受（catalog 校验）</td>
+<td>造空 bundle 塞回去</td>
+<td>高</td>
+</tr>
+<tr>
+<td>5</td>
+<td>分布式产物不被 Steam 校验破坏</td>
+<td>装完跑一次校验</td>
+<td>中</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7">7. 工具链记录</h2>
+<ul>
+<li>反编译：ILSpy（<code>winget install ICSharpCode.ILSpy</code>）</li>
+<li>快速字符串取证：<code>grep -a -o "&lt;pattern&gt;" Assembly-CSharp.dll</code>
+  注意 1：元数据字符串堆会去重，计数只代表「存在」，不代表使用次数。
+  注意 2：<strong>方法名/类型名在 <code>#Strings</code> 堆里是 UTF-8</strong>（可以直接 grep），
+  <strong>字符串字面量在 <code>#US</code> 堆里是 UTF-16LE</strong>（要 <code>s.encode('utf-16-le')</code> 才 grep 得到）。</li>
+<li>二进制头：<code>xxd -l 96 &lt;file&gt;</code></li>
+<li>构建：<code>dotnet build src/Mod.csproj</code>（.NET SDK 10.0.403 已验证通过）</li>
+</ul>
+<h3 id="2026-11-07">编译踩坑（2026-11-07 实测，三个都踩过）</h3>
+<table>
+<thead>
+<tr>
+<th>报错</th>
+<th>真实原因</th>
+<th>解法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CS0433</code> 类型同时存在于 <code>UnityEngine</code> 和 <code>UnityEngine.CoreModule</code></td>
+<td>NuGet 的 <code>UnityEngine</code> 5.6.1 <strong>桩包</strong>（BepInEx.Unity.Mono 的传递依赖）和游戏 CoreModule 都定义了同名类型</td>
+<td>显式 <code>&lt;PackageReference Include="UnityEngine" ... ExcludeAssets="compile;runtime" /&gt;</code> 排除桩包的编译引用</td>
+</tr>
+<tr>
+<td><code>CS0012</code> <code>MonoBehaviour</code> 在未引用的程序集中定义</td>
+<td>只引了 CoreModule，缺 <code>UnityEngine.dll</code>——<code>BaseUnityPlugin</code> 是绑在名为 <code>UnityEngine</code> 的程序集上的</td>
+<td>必须同时引 <code>UnityEngine.dll</code></td>
+</tr>
+<tr>
+<td><code>CS1069</code> <code>Application</code> 已转发到 <code>UnityEngine.CoreModule</code></td>
+<td>只引了 <code>UnityEngine.dll</code>——它是<strong>纯类型转发门面</strong>，自己不定义任何类型</td>
+<td>同上，两个都要引</td>
+</tr>
+</tbody>
+</table>
+<p><strong>结论：<code>UnityEngine.dll</code>（门面）+ <code>UnityEngine.CoreModule.dll</code>（定义）+ 排除 NuGet 桩包，三件缺一不可。</strong> 这条坑不写下来，下一个人一定会再踩一遍。</p>
+<blockquote>
+<p>反直觉的点：<code>UnityEngine.dll</code> 既不「包含全部类型」（它只转发），也不「可以不要」（它提供程序集标识）。两种误解各对应一个报错，而且报错信息互相矛盾，靠猜是猜不出来的。</p>
+</blockquote>
+</div>
+</body>
+</html>

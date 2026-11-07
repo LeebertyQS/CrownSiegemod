@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Git 工作流（Crown Siege Mod · 2 人团队）</title>
+<style>
+:root{
+  --ink:#1a1a1a; --muted:#5c6370; --line:#e3e6ea; --bg:#ffffff;
+  --accent:#1f6feb; --code-bg:#f6f8fa; --warn-bg:#fff8e6; --warn-line:#e0a800;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:#f7f8fa; color:var(--ink);
+  font:16px/1.75 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:880px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);}
+h1{font-size:30px; line-height:1.35; margin:0 0 8px; letter-spacing:-.4px;}
+h2{font-size:21px; margin:44px 0 14px; padding-top:18px; border-top:1px solid var(--line);}
+h3{font-size:17px; margin:28px 0 10px;}
+p{margin:12px 0;}
+a{color:var(--accent); text-decoration:none;}
+a:hover{text-decoration:underline;}
+hr{border:0; border-top:1px solid var(--line); margin:36px 0;}
+code{background:var(--code-bg); padding:2px 5px; border-radius:4px;
+  font:13.5px/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;}
+pre{background:var(--code-bg); padding:14px 16px; border-radius:8px; overflow-x:auto;
+  border:1px solid var(--line);}
+pre code{background:none; padding:0; font-size:13px;}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14.5px;}
+th,td{border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f2f4f7; font-weight:600; white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfc;}
+blockquote{margin:16px 0; padding:12px 16px; background:var(--warn-bg);
+  border-left:3px solid var(--warn-line); color:#4a3c00; border-radius:0 6px 6px 0;}
+blockquote p{margin:4px 0;}
+ul,ol{padding-left:24px; margin:12px 0;}
+li{margin:5px 0;}
+li input[type=checkbox]{margin-right:6px; transform:translateY(1px);}
+.toc{background:#f7f8fa; border:1px solid var(--line); border-radius:8px;
+  padding:14px 20px; margin:24px 0 8px; font-size:14.5px;}
+.toc b{display:block; font-size:13px; letter-spacing:.06em; color:var(--muted);
+  text-transform:uppercase; margin-bottom:8px;}
+.toc a{display:block; padding:2px 0; color:#333;}
+.meta{color:var(--muted); font-size:13.5px; margin-bottom:26px;}
+@media print{
+  body{background:#fff;} .page{box-shadow:none; padding:0; max-width:none;}
+  h2{page-break-after:avoid;} pre,table,blockquote{page-break-inside:avoid;}
+}
+@media (max-width:720px){
+  .page{padding:28px 20px 64px;} h1{font-size:24px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Git 工作流（Crown Siege Mod · 2 人团队）</h1>
+<div class="meta">Crown Siege Mod · 内部文档 · 有疑问直接找 Lee</div>
+<nav class="toc"><b>目录</b><a href="#0">0. 一句话原则</a>
+<a href="#1-git">1. 仓库边界：什么进 Git，什么不进</a>
+<a href="#2">2. 目录结构</a>
+<a href="#3-lee">3. 初始化（只做一次，由 Lee 执行）</a>
+<a href="#4">4. 分支模型：主干 + 短分支</a>
+<a href="#5">5. 提交规范</a>
+<a href="#6">6. 两人分工与冲突预防</a>
+<a href="#7">7. 每日循环（命令级）</a>
+<a href="#8">8. 版本标记与发布</a>
+<a href="#9">9. 什么叫「本地自测通过」</a>
+<a href="#10">10. 游戏更新时怎么办</a>
+<a href="#11">11. 回滚手册</a>
+<a href="#12">12. 禁止清单</a>
+<a href="#13-workbuddy-git">13. 项目盘（WorkBuddy）与 Git 的分工</a></nav>
+<blockquote>
+<p>本文是内部规范。给协作者看的版本在 <code>docs/协作者安装指南.md</code>，那份是自包含的，可以直接发。</p>
+</blockquote>
+<hr />
+<h2 id="0">0. 一句话原则</h2>
+<p><strong>Git 是唯一真相，项目盘是分发通道。</strong> 代码和资源只活在 Git 里；项目盘只放「给非代码成员看的文档」和「可直接运行的产物」。</p>
+<p>原因很硬：<code>AssetBundle</code>、<code>.entities</code>、<code>.psd</code> 这些二进制文件<strong>没法 merge</strong>。两个人同时改同一个二进制，Git 不会告诉你哪里冲突，它只会让后提交的把先提交的静默覆盖。所以这套流程的重点不是「怎么合」，而是<strong>怎么从一开始就不撞</strong>。</p>
+<hr />
+<h2 id="1-git">1. 仓库边界：什么进 Git，什么不进</h2>
+<table>
+<thead>
+<tr>
+<th>内容</th>
+<th>进 Git</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C# 源码 <code>src/</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>工具脚本 <code>tools/</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>设计/决策文档 <code>docs/</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>我们自己画的资源 <code>assets/</code></td>
+<td>✅ 走 LFS</td>
+<td>必须是我们原创，不能是游戏里抠的</td>
+</tr>
+<tr>
+<td>我们自己写的配置/JSON <code>data/</code></td>
+<td>✅</td>
+<td>纯文本，天然可 merge</td>
+</tr>
+<tr>
+<td>游戏程序集（<code>Assembly-CSharp.dll</code> 等）</td>
+<td>❌</td>
+<td>版权 + 体积。靠 <code>local.props</code> 指向本机游戏目录</td>
+</tr>
+<tr>
+<td>游戏原始资源（bundle / entities / 贴图音频）</td>
+<td>❌</td>
+<td>同上。<strong>一旦进仓库，仓库就不能公开了</strong></td>
+</tr>
+<tr>
+<td>编译产物 <code>bin/ obj/ releases/</code></td>
+<td>❌</td>
+<td>产物走项目盘分发</td>
+</tr>
+<tr>
+<td><code>local.props</code>、<code>mod.config.local.json</code></td>
+<td>❌</td>
+<td>每人路径不同，必须 gitignore</td>
+</tr>
+<tr>
+<td>反编译出来的 <code>.cs</code> 全文</td>
+<td>❌</td>
+<td>用来读、用来对照，不落库</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判断标准一句话</strong>：这个文件是不是「只有我能生成、别人拉下来也不该有」？是 → 不进。</p>
+<hr />
+<h2 id="2">2. 目录结构</h2>
+<pre><code>06_CsMod/
+├─ docs/                 设计、决策、研究笔记
+│   ├─ GIT-WORKFLOW.md
+│   ├─ 协作者安装指南.md
+│   ├─ ARCHITECTURE.md   模块边界、引擎选型、联机为什么只定接口
+│   ├─ DECISIONS.md      决策记录（ADR）
+│   └─ RESEARCH.md       引擎分析、类名清单、Job 清单
+├─ src/                  单一程序集，按目录分模块
+│   ├─ Mod.csproj
+│   ├─ Plugin.cs         入口（唯一会被两人同时改的文件，只追加不重排）
+│   ├─ Core/             模块契约、注册表、配置、版本哨兵、日志
+│   ├─ Diagnostics/      环境诊断
+│   ├─ Menu/             主菜单注入 + 菜单探针
+│   ├─ Control/          手动操控
+│   └─ Net/              联机（只有接口）
+├─ assets/               我们原创的美术/音频（LFS）
+├─ data/                 我们自己的数据补丁文件
+├─ tools/                detect-game.ps1、build-doc.py
+├─ game-version.txt      目标游戏版本指纹（build-guid）
+├─ Directory.Build.props 公共 MSBuild 配置
+├─ local.props.example   路径配置模板
+├─ .gitattributes        LFS 规则 + 二进制独占锁
+└─ .gitignore
+</code></pre>
+<hr />
+<h2 id="3-lee">3. 初始化（只做一次，由 Lee 执行）</h2>
+<pre><code class="language-bash">cd &lt;repo 目录&gt;
+git init
+git lfs install
+git add .
+git commit -m &quot;chore: 初始化项目骨架&quot;
+git remote add origin &lt;远程仓库地址&gt;
+git push -u origin main
+</code></pre>
+<p>仓库设为 <strong>Private</strong>。理由：mod 源码里会有大量对游戏内部结构的分析记录，公开等于把拆解成果直接送人；等有可发布版本再决定是否开放。</p>
+<hr />
+<h2 id="4">4. 分支模型：主干 + 短分支</h2>
+<p>2 个人不值得上 GitFlow。用 trunk-based：</p>
+<pre><code>main ────●────●────●────●────●────  (永远可编译、可跑)
+          \        /    \      /
+           ●──●──●       ●────●        feat/xxx, probe/p0 这类短分支，活不过 2 天
+</code></pre>
+<p>规则：</p>
+<ol>
+<li><strong><code>main</code> 永远处于「拉下来就能编译、能进游戏」的状态。</strong> 破了立刻修，别在上面继续叠加。</li>
+<li>任何超过一次提交的改动，开分支：<code>feat/&lt;slug&gt;</code> / <code>fix/&lt;slug&gt;</code> / <code>probe/&lt;编号&gt;</code>。</li>
+<li>分支寿命 ≤ 2 天。拖长了就会和对方的改动打架。</li>
+<li><strong>禁止直接往 <code>main</code> 推</strong>，唯一例外是 P0/P1/P2 探针（<code>probe/*</code> 可以直推，因为它的价值就是快速验证），推完立刻打标记。</li>
+<li>合并进 <code>main</code> 用 <code>git merge --no-ff</code>，保留合并点，方便日后 <code>git log --graph</code> 看清「哪个功能是一坨」。</li>
+</ol>
+<hr />
+<h2 id="5">5. 提交规范</h2>
+<p>格式：<code>type(scope): 一句话说清做了什么</code></p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>feat</code></td>
+<td>新功能</td>
+</tr>
+<tr>
+<td><code>fix</code></td>
+<td>修 bug</td>
+</tr>
+<tr>
+<td><code>probe</code></td>
+<td>P0/P1/P2 探针，实验性质</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>数据/配置改动（不改代码）</td>
+</tr>
+<tr>
+<td><code>docs</code></td>
+<td>文档</td>
+</tr>
+<tr>
+<td><code>chore</code></td>
+<td>构建、依赖、杂务</td>
+</tr>
+<tr>
+<td><code>revert</code></td>
+<td>回滚</td>
+</tr>
+</tbody>
+</table>
+<p>要求：</p>
+<ul>
+<li><strong>一次提交只干一件事。</strong> 「顺手改了格式」「顺手调了个参数」全部拆开。</li>
+<li>提交信息写<strong>为什么</strong>，不写「改了什么」——改了什么 <code>git diff</code> 会告诉你。</li>
+<li>中文可以，别混着写。</li>
+<li>提交前必须 <code>git status</code> 看一遍：有没有 <code>local.props</code>、有没有 <code>bin/</code>、有没有游戏 dll 混进去。</li>
+</ul>
+<hr />
+<h2 id="6">6. 两人分工与冲突预防</h2>
+<p>这是整套流程里最关键的段落。<strong>分工按「文件所有权」切，不按「任务」切。</strong></p>
+<table>
+<thead>
+<tr>
+<th>区域</th>
+<th>默认所有者</th>
+<th>对方能不能碰</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/Core/**</code> <code>src/Menu/**</code></td>
+<td>Lee</td>
+<td>改动前先说一声</td>
+</tr>
+<tr>
+<td><code>src/Control/**</code></td>
+<td>协作者</td>
+<td>改动前先说一声</td>
+</tr>
+<tr>
+<td><code>src/Net/**</code></td>
+<td>冻结，只读</td>
+<td>改之前必须先过 D-007</td>
+</tr>
+<tr>
+<td><code>src/Plugin.cs</code></td>
+<td>双方</td>
+<td>只追加模块注册行，不重排不重构</td>
+</tr>
+<tr>
+<td><code>assets/**</code></td>
+<td>美术负责人</td>
+<td>只有本人碰</td>
+</tr>
+<tr>
+<td><code>data/**</code></td>
+<td>谁写的谁维护</td>
+<td>按文件名切，一人一批</td>
+</tr>
+<tr>
+<td><code>tools/**</code></td>
+<td>Lee</td>
+<td>只读使用</td>
+</tr>
+<tr>
+<td><code>docs/**</code></td>
+<td>双方</td>
+<td>各自的笔记用 <code>docs/notes-&lt;名字&gt;.md</code></td>
+</tr>
+</tbody>
+</table>
+<p>三条硬规矩：</p>
+<ol>
+<li>
+<p><strong><code>assets/</code> 下的二进制文件，改之前先 LFS 加锁</strong>：
+   <code>bash
+   git lfs lock assets/units/dragon.psd     # 锁住
+   git lfs unlock assets/units/dragon.psd   # 用完解锁</code>
+   <code>.gitattributes</code> 里已经给 <code>.psd / .blend / .aseprite</code> 标了 <code>lockable</code>，不加锁推不上去。这一步是唯一能物理阻止互相覆盖的机制，别省。</p>
+</li>
+<li>
+<p><strong>同一份 <code>data/*.json</code> 不做并行修改。</strong> 需要两人同时改就先拆文件：<code>units-dragon.json</code> 而不是共用 <code>units.json</code>。</p>
+</li>
+<li>
+<p><strong>每天开工第一件事 <code>git pull --rebase</code>，收工最后一件事 <code>git push</code>。</strong> 不允许「我本地攒了三天的改动」。</p>
+</li>
+</ol>
+<hr />
+<h2 id="7">7. 每日循环（命令级）</h2>
+<pre><code class="language-bash"># 1) 开工：同步
+git switch main
+git pull --rebase
+git lfs pull
+
+# 2) 开分支
+git switch -c feat/astral-beam-cooldown
+
+# 3) 写代码 / 改数据 → 本地自测（见第 9 节三条标准）
+
+# 4) 提交
+git status                 # 必须看一眼，确认没混入垃圾
+git add src/Plugin.cs
+git commit -m &quot;feat(beam): 星束冷却改为按波次重置&quot;
+
+# 5) 推送
+git push -u origin feat/astral-beam-cooldown
+
+# 6) 开 PR，对方 review，合并
+</code></pre>
+<p>Review 要求（2 人也别省）：</p>
+<ul>
+<li>必看三点：<strong>有没有碰不该碰的文件</strong>、<strong>自测三条做没做</strong>、<strong>有没有把游戏资产带进仓库</strong>。</li>
+<li>批准后由<strong>提交者本人</strong>合并，避免两人同时点。</li>
+<li>合并完删远程分支：<code>git push origin --delete feat/xxx</code>。</li>
+</ul>
+<hr />
+<h2 id="8">8. 版本标记与发布</h2>
+<p>产物<strong>不进 Git</strong>，进项目盘。Git 里只留标记。</p>
+<pre><code class="language-bash">git tag -a v0.1.0+game.6000.6.7f1 -m &quot;P0/P1/P2 探针通过，首个可安装包&quot;
+git push origin v0.1.0+game.6000.6.7f1
+</code></pre>
+<p>Tag 命名规则：<code>v&lt;mod版本&gt;+game.&lt;游戏版本&gt;</code>。后半段来自 <code>game-version.txt</code> 的 <code>unity=</code> 字段。</p>
+<p><strong>这个后缀是必须的。</strong> 游戏一更新，旧 tag 的包就可能在别人的机器上崩，必须能从 tag 一眼看出它对应哪个游戏版本。</p>
+<p>发布流程：</p>
+<ol>
+<li><code>dotnet build src/Mod.csproj -c Release</code></li>
+<li>打包成 <code>CrownSiegeToolkit-v0.1.0.zip</code>，内含 <code>BepInEx/plugins/CrownSiegeToolkit/CrownSiegeToolkit.dll</code> + <code>README.txt</code> + <code>CHANGELOG.md</code></li>
+<li>上传到项目盘 <code>releases/</code> 目录（<strong>上传前按项目规则先确认</strong>）</li>
+<li>打 tag，写清这个版本对应哪个游戏版本</li>
+</ol>
+<hr />
+<h2 id="9">9. 什么叫「本地自测通过」</h2>
+<p>不能用「我跑了一遍没崩」当标准。三条全过才算：</p>
+<ol>
+<li><strong>三次独立启动行为一致</strong> —— 排除初始化竞态。关掉游戏重开，重复三次，现象相同。</li>
+<li><strong>有日志断言</strong> —— 关键路径打一行自己的日志，日志里的值符合预期。靠眼睛看画面不算。</li>
+<li><strong>能一键回滚</strong> —— 删掉 <code>BepInEx/plugins/CrownSiegeToolkit/</code> 就回到原状，且回滚后再启动一次，确认没有残留行为。</li>
+</ol>
+<p>PR 描述里贴日志片段。没贴 = 没测。</p>
+<hr />
+<h2 id="10">10. 游戏更新时怎么办</h2>
+<p><code>game-version.txt</code> 里的 <code>build-guid</code> 是哨兵。<code>tools/detect-game.ps1</code> 每次跑都会比对，不一致就警告。</p>
+<p>游戏更新后的固定动作：</p>
+<ol>
+<li><strong>冻结 <code>main</code></strong>，不许合并。</li>
+<li>从当前 <code>main</code> 拉 <code>game/&lt;新版本号&gt;</code> 分支。</li>
+<li>重跑 P0 / P1 / P2 三个探针，记录哪些挂了。</li>
+<li>修复通过后再合回 <code>main</code>，并把 <code>game-version.txt</code> 的 <code>build-guid</code> / <code>unity</code> 更新掉，提交信息写 <code>chore: 升级目标版本到 &lt;新版本&gt;</code>。</li>
+<li>旧版本的产物<strong>不删</strong>，在项目盘 <code>releases/</code> 里按版本留着。</li>
+</ol>
+<blockquote>
+<p>注意：我们已经有公开证据表明这游戏会持续更新（作者原文提到新环境、新 boss、更多单位）。<strong>不要假设「不会更新」</strong>，这个假设一旦错了，所有跟版本绑定的东西一起废。</p>
+</blockquote>
+<hr />
+<h2 id="11">11. 回滚手册</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>命令</th>
+<th>注意</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>改坏了功能</td>
+<td><code>git revert &lt;sha&gt;</code></td>
+<td>不要用 <code>reset</code> 改历史</td>
+</tr>
+<tr>
+<td>误提交了 <code>local.props</code> / dll</td>
+<td><code>git rm --cached &lt;file&gt;</code> + 补 <code>.gitignore</code> + 提交</td>
+<td>历史里还留着，若涉及体积/版权再清理</td>
+</tr>
+<tr>
+<td>本地改乱了想放弃</td>
+<td><code>git reset --hard origin/main</code></td>
+<td>⚠️ 会丢未提交改动，执行前 <code>git stash</code> 或确认</td>
+</tr>
+<tr>
+<td>二进制资产被覆盖</td>
+<td><code>git lfs checkout &lt;sha&gt; -- assets/x.png</code> 或 <code>git show &lt;sha&gt;:assets/x.png &gt; x.png</code></td>
+<td>LFS 的历史版本能取回，这是 LFS 的最大价值</td>
+</tr>
+<tr>
+<td>需要清理历史里的大文件/密钥</td>
+<td><code>git filter-repo</code></td>
+<td>⚠️ <strong>改写历史必须先通知对方暂停推送</strong>，之后所有人重新 clone</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>git push --force</code> 只有一种情况允许</strong>：清理误入的密钥或超大文件，且必须先在群里说一声、确认对方已推送完。其余任何情况都用 <code>revert</code>。</p>
+<hr />
+<h2 id="12">12. 禁止清单</h2>
+<ul>
+<li>❌ 往 <code>main</code> 直推（<code>probe/*</code> 除外）</li>
+<li>❌ 提交 <code>local.props</code>、<code>bin/</code>、<code>obj/</code>、游戏 dll、游戏原始资源</li>
+<li>❌ 在 <code>main</code> 上 <code>git push --force</code></li>
+<li>❌ 改别人 <code>assets/</code> 下的文件（除非对方明确交接）</li>
+<li>❌ 不加锁就改 <code>lockable</code> 二进制</li>
+<li>❌ 把「顺手改的格式」混进功能提交</li>
+<li>❌ 攒三天不推</li>
+<li>❌ 在仓库里放游戏的原始 bundle 或从游戏里提取的贴图</li>
+</ul>
+<hr />
+<h2 id="13-workbuddy-git">13. 项目盘（WorkBuddy）与 Git 的分工</h2>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>放哪</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>代码、资源、脚本、设计文档</td>
+<td>Git</td>
+</tr>
+<tr>
+<td>给协作者看的说明、给非技术成员看的材料</td>
+<td>项目盘</td>
+</tr>
+<tr>
+<td>可运行的发布包 <code>zip</code></td>
+<td>项目盘 <code>releases/</code></td>
+</tr>
+<tr>
+<td>每日进度、临时讨论结论</td>
+<td>项目盘 <code>notes/</code></td>
+</tr>
+</tbody>
+</table>
+<p>项目盘的所有写操作<strong>每次都要人工确认</strong>（这是硬规则），所以它天生不适合高频迭代。它适合「已经定稿、要给别人看」的东西。<strong>别把它当网盘用。</strong></p>
+</div>
+</body>
+</html>

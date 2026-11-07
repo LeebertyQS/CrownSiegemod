@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crown Siege Mod 开发环境安装指南</title>
+<style>
+:root{
+  --ink:#1a1a1a; --muted:#5c6370; --line:#e3e6ea; --bg:#ffffff;
+  --accent:#1f6feb; --code-bg:#f6f8fa; --warn-bg:#fff8e6; --warn-line:#e0a800;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:#f7f8fa; color:var(--ink);
+  font:16px/1.75 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:880px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);}
+h1{font-size:30px; line-height:1.35; margin:0 0 8px; letter-spacing:-.4px;}
+h2{font-size:21px; margin:44px 0 14px; padding-top:18px; border-top:1px solid var(--line);}
+h3{font-size:17px; margin:28px 0 10px;}
+p{margin:12px 0;}
+a{color:var(--accent); text-decoration:none;}
+a:hover{text-decoration:underline;}
+hr{border:0; border-top:1px solid var(--line); margin:36px 0;}
+code{background:var(--code-bg); padding:2px 5px; border-radius:4px;
+  font:13.5px/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;}
+pre{background:var(--code-bg); padding:14px 16px; border-radius:8px; overflow-x:auto;
+  border:1px solid var(--line);}
+pre code{background:none; padding:0; font-size:13px;}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14.5px;}
+th,td{border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f2f4f7; font-weight:600; white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfc;}
+blockquote{margin:16px 0; padding:12px 16px; background:var(--warn-bg);
+  border-left:3px solid var(--warn-line); color:#4a3c00; border-radius:0 6px 6px 0;}
+blockquote p{margin:4px 0;}
+ul,ol{padding-left:24px; margin:12px 0;}
+li{margin:5px 0;}
+li input[type=checkbox]{margin-right:6px; transform:translateY(1px);}
+.toc{background:#f7f8fa; border:1px solid var(--line); border-radius:8px;
+  padding:14px 20px; margin:24px 0 8px; font-size:14.5px;}
+.toc b{display:block; font-size:13px; letter-spacing:.06em; color:var(--muted);
+  text-transform:uppercase; margin-bottom:8px;}
+.toc a{display:block; padding:2px 0; color:#333;}
+.meta{color:var(--muted); font-size:13.5px; margin-bottom:26px;}
+@media print{
+  body{background:#fff;} .page{box-shadow:none; padding:0; max-width:none;}
+  h2{page-break-after:avoid;} pre,table,blockquote{page-break-inside:avoid;}
+}
+@media (max-width:720px){
+  .page{padding:28px 20px 64px;} h1{font-size:24px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Crown Siege Mod 开发环境安装指南</h1>
+<div class="meta">Crown Siege Mod · 内部文档 · 有疑问直接找 Lee</div>
+<nav class="toc"><b>目录</b><a href="#0">0. 全流程速览</a>
+<a href="#1">1. 前置清单</a>
+<a href="#2-1">2. 第 1 步：确认游戏路径</a>
+<a href="#3-2-git-git-lfs">3. 第 2 步：装 Git 与 Git LFS</a>
+<a href="#4-3">4. 第 3 步：拿代码</a>
+<a href="#5-4">5. 第 4 步：让工程找到你的游戏</a>
+<a href="#6-5-bepinex">6. 第 5 步：装 BepInEx（关键步骤）</a>
+<a href="#7-6-net-sdk">7. 第 6 步：装 .NET SDK 并编译</a>
+<a href="#8-7-p0">8. 第 7 步：冒烟测试（P0）</a>
+<a href="#9-8">9. 第 8 步：装反编译工具</a>
+<a href="#10">10. 日常怎么干活</a>
+<a href="#11">11. 绝对不要做的事</a>
+<a href="#12">12. 排错表</a>
+<a href="#13">13. 怎么恢复原状</a>
+<a href="#14-checklist">14. 第一天 checklist</a>
+<a href="#_1">联系</a></nav>
+<p>给协作者：<strong>照着做，每步都有「怎么算成功」。卡在哪一步就把那步的输出发我。</strong></p>
+<p>预计耗时 40–60 分钟，其中一半时间在等下载。</p>
+<hr />
+<h2 id="0">0. 全流程速览</h2>
+<pre><code>确认游戏本体 → 装 Git/LFS → clone 仓库 → 跑脚本定位游戏 → 装 BepInEx
+→ 装 .NET SDK → 编译 → 进游戏看日志 → 完成
+</code></pre>
+<p>任何一步失败<strong>不要往下跳</strong>。后面所有步骤都建立在前面成功的基础上。</p>
+<hr />
+<h2 id="1">1. 前置清单</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>要求</th>
+<th>怎么确认</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>操作系统</td>
+<td>Windows 10 / 11 x64</td>
+<td>—</td>
+</tr>
+<tr>
+<td>游戏本体</td>
+<td>Steam 版 Crown Siege（正式版）</td>
+<td>Steam 库里能启动</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>2.40+</td>
+<td><code>git --version</code></td>
+</tr>
+<tr>
+<td>Git LFS</td>
+<td>任意版本</td>
+<td><code>git lfs version</code></td>
+</tr>
+<tr>
+<td>.NET SDK</td>
+<td>8.0 或更高（本机实测 10.0.403 可用）</td>
+<td><code>dotnet --list-sdks</code></td>
+</tr>
+<tr>
+<td>GitHub 账号</td>
+<td>需要被加入仓库协作者</td>
+<td>能打开仓库页面</td>
+</tr>
+<tr>
+<td>反编译工具</td>
+<td>ILSpy（免费）</td>
+<td>见第 8 步</td>
+</tr>
+<tr>
+<td>磁盘</td>
+<td>游戏 5 GB + 工具 2 GB</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>没有游戏本体做不了这件事。</strong> 这个 mod 依赖直接引用游戏本机的 <code>Assembly-CSharp.dll</code>，仓库里不包含它（也不允许包含）。</p>
+<hr />
+<h2 id="2-1">2. 第 1 步：确认游戏路径</h2>
+<p>默认路径通常是：</p>
+<pre><code>D:\SteamLibrary\steamapps\common\Crown Siege
+</code></pre>
+<p>不确定就按这个顺序找：</p>
+<ol>
+<li>Steam 客户端 → 库 → 右键 Crown Siege → 管理 → 浏览本地文件</li>
+<li>或者看 <code>C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf</code>，里面列了所有库目录</li>
+</ol>
+<p><strong>成功的标志</strong>：这个路径下存在以下文件</p>
+<pre><code>Crown Siege\
+├─ CrownSiege.exe
+└─ CrownSiege_Data\
+    ├─ Managed\Assembly-CSharp.dll      ← 必须有这个
+    └─ boot.config                       ← 里面有 build-guid
+</code></pre>
+<p>把 <code>boot.config</code> 用记事本打开，找到 <code>build-guid=</code> 那一行。<strong>应该等于</strong>：</p>
+<pre><code>d07d7b203ec34f6b9a35c7796923a472
+</code></pre>
+<p>如果不一样 —— 说明你的游戏版本比我们的目标版本新/旧。<strong>先别往下做，告诉我实际值。</strong></p>
+<hr />
+<h2 id="3-2-git-git-lfs">3. 第 2 步：装 Git 与 Git LFS</h2>
+<pre><code class="language-powershell">winget install --id Git.Git -e
+# 装完关掉终端重开一个，让 PATH 生效
+git --version
+git lfs install
+</code></pre>
+<p><code>git lfs install</code> 的输出应该是 <code>Updated Git hooks.</code>。这一步只做一次，全局生效。</p>
+<p>配置身份（用你自己的名字和邮箱）：</p>
+<pre><code class="language-powershell">git config --global user.name &quot;你的名字&quot;
+git config --global user.email &quot;你的邮箱&quot;
+</code></pre>
+<p><strong>成功标志</strong>：<code>git --version</code> 和 <code>git lfs version</code> 都能打出版本号。</p>
+<hr />
+<h2 id="4-3">4. 第 3 步：拿代码</h2>
+<p>仓库地址会单独发给你。私有的，需要你先接受邀请。</p>
+<pre><code class="language-powershell">cd D:\Projects          # 换成你自己的目录
+git clone &lt;仓库地址，我会单独发你&gt;
+cd 06_CsMod
+git lfs pull
+</code></pre>
+<p><strong>成功标志</strong>：目录里能看到 <code>src\</code>、<code>tools\</code>、<code>docs\</code>、<code>game-version.txt</code>。</p>
+<p><strong>常见坑</strong>：<code>git lfs pull</code> 输出大量 <code>Could not resolve</code> → 你没装 LFS，回第 2 步。仓库里的 <code>.png/.psd</code> 会变成几十字节的文本指针文件，打开就是一行 <code>version https://git-lfs...</code>。</p>
+<hr />
+<h2 id="5-4">5. 第 4 步：让工程找到你的游戏</h2>
+<p>仓库里不带游戏路径，因为每个人安装位置不一样。用脚本自动探测：</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File tools\detect-game.ps1
+</code></pre>
+<p>正常输出长这样：</p>
+<pre><code>[1/4] searching for Crown Siege ...
+      found: D:\SteamLibrary\steamapps\common\Crown Siege
+[2/4] checking game build fingerprint ...
+      build-guid OK (d07d7b203ec34f6b9a35c7796923a472)
+[3/4] Assembly-CSharp.dll = 1140224 bytes (Unity 6000.6.7f1 expected)
+[4/4] writing local.props ...
+      written: ...\06_CsMod\local.props
+</code></pre>
+<p>自动探测失败时，手动指定路径：</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File tools\detect-game.ps1 -GameHome &quot;E:\你的路径\steamapps\common\Crown Siege&quot;
+</code></pre>
+<p><strong>成功标志</strong>：仓库根目录出现 <code>local.props</code>，里面写着你的游戏路径。</p>
+<blockquote>
+<p><code>local.props</code> 已被 <code>.gitignore</code> 排除，<strong>永远不会被提交</strong>。它是你本机的私有配置，改了不用管。</p>
+</blockquote>
+<hr />
+<h2 id="6-5-bepinex">6. 第 5 步：装 BepInEx（关键步骤）</h2>
+<p>这一步会<strong>修改你本地的游戏目录</strong>。只影响你自己这台机器，但要知道它在干什么。</p>
+<h3 id="61">6.1 下载</h3>
+<p>打开 <a href="https://builds.bepinex.dev/projects/bepinex_be">https://builds.bepinex.dev/projects/bepinex_be</a>，下载这一行（x64、Mono）：</p>
+<pre><code>BepInEx-Unity.Mono-win-x64-6.0.0-be.xxx+xxxxxxxx.zip
+</code></pre>
+<p><strong>认准 <code>Unity.Mono</code> 和 <code>win-x64</code>。</strong> 别下 IL2CPP 版本（这个游戏是 Mono，下了会加载失败）。</p>
+<h3 id="62">6.2 安装</h3>
+<p>把 zip <strong>解开，内容直接覆盖到游戏根目录</strong>，和 <code>CrownSiege.exe</code> 同一层。不是解到子文件夹。</p>
+<p>解压后根目录大致多出：</p>
+<pre><code>Crown Siege\
+├─ winhttp.dll              ← 注入器
+├─ doorstop_config.ini      ← 注入配置
+└─ BepInEx\
+    ├─ core\
+    ├─ plugins\             ← 我们的 dll 放这里
+    └─ config\
+</code></pre>
+<p>（具体文件以你下的那个包为准。）</p>
+<h3 id="63">6.3 验证</h3>
+<p><strong>从 Steam 启动游戏一次</strong>，进到主菜单，然后退出。</p>
+<p><strong>成功标志</strong>：真的能进游戏（没崩），并且出现</p>
+<pre><code>Crown Siege\BepInEx\LogOutput.log
+</code></pre>
+<p>打开这个日志，开头能看到 BepInEx 的版本号和预加载器信息。</p>
+<p><strong>如果游戏启动直接闪退</strong>：删掉 <code>winhttp.dll</code> 和 <code>doorstop_config.ini</code> 就能恢复原状，然后把日志发我。</p>
+<hr />
+<h2 id="7-6-net-sdk">7. 第 6 步：装 .NET SDK 并编译</h2>
+<pre><code class="language-powershell">winget install --id Microsoft.DotNet.SDK.8 -e
+# 关掉终端重开
+dotnet --list-sdks
+</code></pre>
+<blockquote>
+<p>装完提示「<code>dotnet</code> 不是内部或外部命令」= 终端没重开，PATH 还是旧的。关掉所有终端窗口再开一个。
+还不行就直接用完整路径：<code>&amp; "C:\Program Files\dotnet\dotnet.exe" --list-sdks</code></p>
+</blockquote>
+<p>编译：</p>
+<pre><code class="language-powershell">cd &lt;仓库目录&gt;
+dotnet build src\Mod.csproj -c Debug
+</code></pre>
+<p><strong>成功标志</strong>：最后一行是 <code>Build succeeded</code>，并且出现</p>
+<pre><code>已部署到 ...\BepInEx\plugins\CrownSiegeToolkit\CrownSiegeToolkit.dll
+</code></pre>
+<blockquote>
+<p>如果报「未配置游戏路径」→ 回第 4 步。
+如果报「找不到类型或命名空间 <code>BaseUnityPlugin</code>」→ 打开 <code>src\Mod\Plugin.cs</code>，把第一行 <code>using BepInEx.Unity.Mono;</code> 改成 <code>using BepInEx;</code>，重新编译。这是 BepInEx 5 与 6 命名空间差异，一行的事，告诉我一声我把仓库里的改掉。</p>
+</blockquote>
+<hr />
+<h2 id="8-7-p0">8. 第 7 步：冒烟测试（P0）</h2>
+<p>这一步是<strong>整个环境是否可用的唯一判据</strong>。</p>
+<p>从 Steam 启动游戏，进主菜单，然后打开：</p>
+<pre><code>&lt;游戏目录&gt;\BepInEx\LogOutput.log
+</code></pre>
+<p><strong>必须同时看到这五行</strong>（顺序大致如下，中间会插进诊断信息）：</p>
+<pre><code>[Info  :Crown Siege Toolkit] Crown Siege Toolkit v0.1.0 loading ...
+[Info  :Crown Siege Toolkit] [版本] build-guid 匹配 (d07d7b203ec34f6b9a35c7796923a472)
+[Info  :Crown Siege Toolkit] Harmony PatchAll ok
+[Info  :Crown Siege Toolkit] [P0] Harmony injected
+[Info  :Crown Siege Toolkit] Crown Siege Toolkit ready. features=4/4
+</code></pre>
+<p>五行的含义：</p>
+<table>
+<thead>
+<tr>
+<th>日志行</th>
+<th>证明什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>loading</code></td>
+<td>BepInEx 找到了我们的 dll 并加载</td>
+</tr>
+<tr>
+<td><code>build-guid 匹配</code></td>
+<td>你的游戏版本和项目锁定的版本一致</td>
+</tr>
+<tr>
+<td><code>PatchAll ok</code></td>
+<td>Harmony 工具链通了</td>
+</tr>
+<tr>
+<td><code>[P0] Harmony injected</code></td>
+<td>补丁<strong>真的进了运行时</strong>，不是「加载了但没生效」</td>
+</tr>
+<tr>
+<td><code>ready. features=4/4</code></td>
+<td>四个模块（诊断/菜单/操控/联机）都注册成功</td>
+</tr>
+</tbody>
+</table>
+<p>另外这段也是正常的，说明菜单探针在工作：</p>
+<pre><code>[菜单探针] Assembly-CSharp 共 xxxx 个类型，命中 xx 个候选：
+</code></pre>
+<p><strong>只有 <code>loading</code> 没有 <code>[P0]</code></strong> = 插件加载了但补丁没打上，这是最坑的半成功状态。出现这种情况把完整日志发我。</p>
+<p>打到了，环境就配好了。</p>
+<hr />
+<h2 id="9-8">9. 第 8 步：装反编译工具</h2>
+<pre><code class="language-powershell">winget install --id ICSharpCode.ILSpy -e
+</code></pre>
+<p>用它打开 <code>&lt;游戏目录&gt;\CrownSiege_Data\Managed\Assembly-CSharp.dll</code>，就能读到全部游戏逻辑。</p>
+<p><strong>规则</strong>：</p>
+<ul>
+<li>反编译出来的代码<strong>只用来读</strong>，用来搞清楚类名、方法签名、调用链。</li>
+<li><strong>不要把反编译结果整份提交进仓库</strong>，也不要把游戏代码抄进我们的工程。</li>
+<li>需要记录结论就写进 <code>docs/RESEARCH.md</code>：类名、方法签名、你的推断。</li>
+</ul>
+<hr />
+<h2 id="10">10. 日常怎么干活</h2>
+<pre><code class="language-powershell">git switch main
+git pull --rebase
+git lfs pull
+
+git switch -c feat/你做的功能名
+
+# 改代码 → 编译 → 进游戏验证
+
+git status                       # 看一眼，确认没混进垃圾文件
+git add &lt;你改的文件&gt;
+git commit -m &quot;feat(模块): 做了什么，为什么&quot;
+git push -u origin feat/你做的功能名
+</code></pre>
+<p>然后开 Pull Request，等 review，合并后删分支。</p>
+<p><strong>提交前必须做过的三件事</strong>（做不到就别提 PR）：</p>
+<ol>
+<li>关掉游戏重开<strong>三次</strong>，现象一致（排除初始化竞态）。</li>
+<li>日志里有关键值的断言输出，不是靠眼睛看画面。</li>
+<li>删掉 <code>BepInEx\plugins\CrownSiegeToolkit\</code> 能干净回到原状。</li>
+</ol>
+<hr />
+<h2 id="11">11. 绝对不要做的事</h2>
+<ol>
+<li><strong>不要改游戏原始文件</strong>。<code>CrownSiege_Data</code> 里的东西一律不动，Steam 校验会覆盖它们，你改了也白改，还会让自己环境跟别人不一样。</li>
+<li><strong>不要把游戏 dll 或游戏资源提交进 Git</strong>。版权问题，而且会让仓库没法公开。</li>
+<li><strong>不要提交 <code>local.props</code></strong>。那是你本机路径，别人拉下来会直接编译失败。</li>
+<li><strong>不要在 <code>main</code> 上直接改</strong>（探针实验除外，实验完立刻说）。</li>
+<li><strong>不要动别人 <code>assets\</code> 下的文件</strong>。要改先加 LFS 锁，用完解锁。</li>
+<li><strong>不要攒几天不推</strong>。二进制没法 merge，你攒得越久，冲突越无解。</li>
+</ol>
+<hr />
+<h2 id="12">12. 排错表</h2>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>原因</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>启动游戏闪退</td>
+<td>BepInEx 装错版本（下了 IL2CPP 包）</td>
+<td>删 <code>winhttp.dll</code> + <code>doorstop_config.ini</code>，换 <code>Unity.Mono-win-x64</code> 重来</td>
+</tr>
+<tr>
+<td>没有 <code>LogOutput.log</code></td>
+<td>BepInEx 没加载</td>
+<td>确认 <code>winhttp.dll</code> 在游戏根目录、和 exe 同层</td>
+</tr>
+<tr>
+<td>日志里没有我们的 mod</td>
+<td>dll 没放对位置</td>
+<td>必须在 <code>BepInEx\plugins\CrownSiegeToolkit\</code> 下</td>
+</tr>
+<tr>
+<td>编译报「未配置游戏路径」</td>
+<td><code>local.props</code> 不存在</td>
+<td>跑 <code>tools\detect-game.ps1</code></td>
+</tr>
+<tr>
+<td>编译报找不到 <code>Assembly-CSharp</code></td>
+<td>路径指错或游戏没装全</td>
+<td><code>detect-game.ps1 -GameHome "实际路径"</code></td>
+</tr>
+<tr>
+<td>编译报 <code>BaseUnityPlugin</code> 不存在</td>
+<td>命名空间差异</td>
+<td><code>Plugin.cs</code> 首行改成 <code>using BepInEx;</code></td>
+</tr>
+<tr>
+<td>图片打不开、只有一行文字</td>
+<td>LFS 没拉</td>
+<td><code>git lfs install</code> + <code>git lfs pull</code></td>
+</tr>
+<tr>
+<td>提示 <code>build-guid mismatch</code></td>
+<td>游戏版本和我们对不上</td>
+<td>别继续，把实际值发我</td>
+</tr>
+<tr>
+<td>改了没效果</td>
+<td>补丁没命中</td>
+<td>看日志有没有 <code>[P0] Harmony injected</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13">13. 怎么恢复原状</h2>
+<pre><code class="language-powershell"># 1. 移除我们的插件
+Remove-Item -Recurse -Force &quot;&lt;游戏目录&gt;\BepInEx\plugins\CrownSiegeToolkit&quot;
+
+# 2. 彻底卸载 BepInEx（回到干净游戏）
+Remove-Item &quot;&lt;游戏目录&gt;\winhttp.dll&quot;
+Remove-Item &quot;&lt;游戏目录&gt;\doorstop_config.ini&quot;
+Remove-Item -Recurse -Force &quot;&lt;游戏目录&gt;\BepInEx&quot;
+
+# 3. 让 Steam 校验一遍，确保游戏文件完好
+#    Steam → 库 → 右键 Crown Siege → 属性 → 已安装文件 → 验证文件完整性
+</code></pre>
+<p>这三步做完，游戏和没装过一样。</p>
+<hr />
+<h2 id="14-checklist">14. 第一天 checklist</h2>
+<ul>
+<li><input type="checkbox" disabled> 游戏能启动，<code>Assembly-CSharp.dll</code> 存在</li>
+<li><input type="checkbox" disabled> <code>build-guid</code> 和文档一致（<code>d07d7b...a472</code>）</li>
+<li><input type="checkbox" disabled> <code>git --version</code> / <code>git lfs version</code> / <code>dotnet --list-sdks</code> 三个都有输出</li>
+<li><input type="checkbox" disabled> clone 成功，<code>git lfs pull</code> 无报错</li>
+<li><input type="checkbox" disabled> <code>detect-game.ps1</code> 跑通，<code>local.props</code> 生成</li>
+<li><input type="checkbox" disabled> BepInEx 装上，进游戏不崩，<code>LogOutput.log</code> 存在</li>
+<li><input type="checkbox" disabled> <code>dotnet build</code> 成功，dll 自动落到 <code>BepInEx\plugins\CrownSiegeToolkit\</code></li>
+<li><input type="checkbox" disabled> <strong>日志里五行全中，含 <code>[P0] Harmony injected</code> 和 <code>ready. features=4/4</code></strong></li>
+<li><input type="checkbox" disabled> ILSpy 能打开 <code>Assembly-CSharp.dll</code>，能看到 <code>ApplyDamageSystem</code></li>
+</ul>
+<p>全打勾 = 环境可用。有任意一项没勾，先别写代码。</p>
+<hr />
+<h2 id="_1">联系</h2>
+<p>卡住的时候，把<strong>这一步的完整终端输出</strong>或<strong>完整的 <code>LogOutput.log</code></strong> 发我，别只发一句「不行」。日志里的第一行报错通常就是答案。</p>
+</div>
+</body>
+</html>

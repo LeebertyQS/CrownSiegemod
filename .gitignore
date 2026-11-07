@@ -1,0 +1,41 @@
+# ===== 本地环境（绝不入库）=====
+local.props
+local.props.user
+mod.config.local.json
+
+# ===== 游戏程序集（版权+体积，靠本地探测，不入库）=====
+lib/
+*.dll
+*.pdb
+!BepInEx*.dll
+
+# ===== 构建产物 =====
+bin/
+obj/
+build/
+releases/
+dist/
+*.zip
+backup/
+*.bundle
+
+# ===== 编辑器 / 系统 =====
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
+
+# ===== 运行时垃圾 =====
+BepInEx/LogOutput.log
+BepInEx/config/
+BepInEx/cache/
+Logs/
+*.log
+
+# ===== 反编译临时产物 =====
+decompiled/
+*.il
+*.cs.bak

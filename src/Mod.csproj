@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>CrownSiegeToolkit</AssemblyName>
+    <RootNamespace>CrownSiegeToolkit</RootNamespace>
+    <Version>0.1.0</Version>
+    <DebugType>portable</DebugType>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- BepInEx 6 Bleeding Edge（Mono）。基类命名空间差异见 Plugin.cs 顶部 -->
+    <PackageReference Include="BepInEx.Core" Version="6.0.0-be.755" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Unity.Mono" Version="6.0.0-be.755" PrivateAssets="all" />
+    <PackageReference Include="HarmonyX" Version="2.10.2" PrivateAssets="all" />
+    <!-- BepInEx.Unity.Mono 会传递引入 UnityEngine 5.6.1 这个「版本无关桩程序集」，
+         它的类型和游戏本体的 CoreModule 重复。这里显式排除它的编译引用，
+         统一以游戏目录里的真实模块为准（版本才对得上）。 -->
+    <PackageReference Include="UnityEngine" Version="5.6.1" ExcludeAssets="compile;runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- 游戏程序集：从本机路径引用，不进仓库，不随产物分发 -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(CrownSiegeManagedDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- 三件套缺一不可：
+         UnityEngine.dll          → 只含类型转发，但提供 BepInEx 绑定所需的程序集标识 "UnityEngine"
+         UnityEngine.CoreModule   → Application / MonoBehaviour / KeyCode 的实际定义
+         UnityEngine.InputLegacyModule → Input 的实际定义
+         注意：NuGet 的 UnityEngine 桩包已在上方被 ExcludeAssets 排除，否则会和 CoreModule 撞 CS0433。 -->
+    <Reference Include="UnityEngine">
+      <HintPath>$(CrownSiegeManagedDir)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(CrownSiegeManagedDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(CrownSiegeManagedDir)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- 要接 UI 时再加 UnityEngine.UIModule / UnityEngine.TextRenderingModule -->
+  </ItemGroup>
+
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(BepInExPluginsDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsDir)\CrownSiegeToolkit" />
+    <Message Importance="high" Text="已部署到 $(BepInExPluginsDir)\CrownSiegeToolkit\$(TargetFileName)" />
+  </Target>
+
+</Project>

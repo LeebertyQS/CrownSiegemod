@@ -1,0 +1,10 @@
+# 目标游戏版本指纹 —— 所有 mod 开发都必须对准这个版本
+# 由 tools/detect-game.ps1 校验；版本不符时工具会拒绝继续
+product=CrownSiege
+vendor=JOrbitsGames
+unity=6000.6.7f1
+build-guid=d07d7b203ec34f6b9a35c7796923a472
+runtime=mono
+verified=2026-11-07
+notes=Steam 正式版，发售日 2026-09-18。内容打包于 StreamingAssets/ContentArchives（UnityFS），
+notes=实体场景在 StreamingAssets/EntityScenes（DOTSBIN），Addressables 2.11.2。

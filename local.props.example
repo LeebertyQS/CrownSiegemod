@@ -1,0 +1,6 @@
+<Project>
+  <!-- 把这个文件复制成 local.props，然后改路径；或者直接跑 tools/detect-game.ps1 让它自动生成 -->
+  <PropertyGroup>
+    <CrownSiegeHome>D:\SteamLibrary\steamapps\common\Crown Siege</CrownSiegeHome>
+  </PropertyGroup>
+</Project>
